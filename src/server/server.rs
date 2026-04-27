@@ -17,7 +17,6 @@ use bevy::math::VectorSpace;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
 use bevy::time::common_conditions::on_timer;
-use core::f32::consts::TAU;
 use core::net::{Ipv4Addr, SocketAddr};
 use core::time::Duration;
 use lightyear::connection::client::Connected;
@@ -30,8 +29,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum ServerTransports {
-    #[cfg(feature = "server")]
     Udp { local_port: u16 },
+    #[cfg(feature = "steam")]
+    Steam {
+        local_port: u16,
+    },
 }
 
 #[derive(Clone)]
@@ -46,7 +48,6 @@ impl Plugin for CoreServerPlugin {
         );
         app.add_observer(handle_new_client);
         app.add_observer(handle_connected);
-        app.add_plugins(AssetPlugin::default());
     }
 }
 
@@ -57,6 +58,7 @@ pub struct CoreServer {
     pub conditioner: Option<RecvLinkConditioner>,
     /// Which transport to use
     pub transport: ServerTransports,
+
     pub shared: SharedSettings,
 }
 
@@ -82,11 +84,18 @@ impl CoreServer {
                 }));
             };
             match settings.transport {
-                #[cfg(feature = "server")]
                 ServerTransports::Udp { local_port } => {
                     add_netcode(&mut entity_mut);
                     let server_addr = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), local_port);
                     entity_mut.insert((LocalAddr(server_addr), ServerUdpIo::default()));
+                }
+                #[cfg(feature = "steam")]
+                ServerTransports::Steam { local_port } => {
+                    let server_addr = SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), local_port);
+                    entity_mut.insert(SteamServerIo {
+                        target: ListenTarget::Addr(server_addr),
+                        config: SessionConfig::default(),
+                    });
                 }
             };
             Ok(())

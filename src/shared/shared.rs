@@ -5,7 +5,7 @@ use bevy::ecs::query::QueryData;
 use bevy::math::VectorSpace;
 use bevy::prelude::*;
 use core::hash::Hash;
-use core::net::{IpAddr, Ipv4Addr, SocketAddr};
+use core::net::{IpAddr, Ipv4Addr, SocketAddrV4, SocketAddr};
 use lightyear::avian3d::plugin::AvianReplicationMode;
 use lightyear::connection::client_of::ClientOf;
 use lightyear::prelude::input::bei::TriggerState;
@@ -20,7 +20,7 @@ pub const STEAM_APP_ID: u32 = 300923;
 
 pub const CLIENT_PORT: u16 = 0;
 
-pub const SERVER_ADDR: SocketAddr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), SERVER_PORT);
+pub const SERVER_ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(34, 60, 165, 78), SERVER_PORT));
 
 pub const SEND_INTERVAL: Duration = Duration::from_millis(100);
 
