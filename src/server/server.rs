@@ -29,7 +29,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum ServerTransports {
-    Udp { local_port: u16 },
+    Udp {
+        local_port: u16,
+    },
     #[cfg(feature = "steam")]
     Steam {
         local_port: u16,
@@ -42,12 +44,7 @@ pub struct CoreServerPlugin;
 impl Plugin for CoreServerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup);
-        app.add_systems(
-            FixedUpdate,
-            (handle_character_actions, player_shoot, despawn_system),
-        );
         app.add_observer(handle_new_client);
-        app.add_observer(handle_connected);
     }
 }
 
@@ -133,71 +130,6 @@ pub fn parse_private_key_from_env() -> Option<[u8; PRIVATE_KEY_BYTES]> {
     Some(bytes)
 }
 
-fn handle_character_actions(
-    time: Res<Time>,
-    spatial_query: SpatialQuery,
-    mut query: Query<(Entity, &ComputedMass, &TriggerState, Forces)>,
-) {
-    for (entity, mass, action_state, forces) in &mut query {
-        todo!();
-    }
-}
-
-#[derive(Component)]
-pub struct DespawnAfter {
-    spawned_at: f32,
-    lifetime: Duration,
-}
-
-fn despawn_system(
-    mut commands: Commands,
-    query: Query<(Entity, &DespawnAfter)>,
-    time: Res<Time<Fixed>>,
-) {
-    for (entity, despawn) in &query {
-        if time.elapsed_secs() - despawn.spawned_at >= despawn.lifetime.as_secs_f32() {
-            commands.entity(entity).despawn();
-        }
-    }
-}
-
-fn player_shoot(
-    commands: Commands,
-    timeline: Res<LocalTimeline>,
-    query: Query<(&TriggerState, &Position, &ControlledBy), Without<Predicted>>,
-    time: Res<Time<Fixed>>,
-) {
-    for (action_state, position, controlled_by) in &query {
-        let mut position_override = ComponentReplicationOverrides::<Position>::default();
-        position_override.global_override(ComponentReplicationOverride {
-            replicate_once: true,
-            ..default()
-        });
-        let mut rotation_override = ComponentReplicationOverrides::<Rotation>::default();
-        rotation_override.global_override(ComponentReplicationOverride {
-            replicate_once: true,
-            ..default()
-        });
-        let mut linear_velocity_override =
-            ComponentReplicationOverrides::<LinearVelocity>::default();
-        linear_velocity_override.global_override(ComponentReplicationOverride {
-            replicate_once: true,
-            ..default()
-        });
-        let mut angular_velocity_override =
-            ComponentReplicationOverrides::<AngularVelocity>::default();
-        angular_velocity_override.global_override(ComponentReplicationOverride {
-            replicate_once: true,
-            ..default()
-        });
-        let mut computed_mass_override = ComponentReplicationOverrides::<ComputedMass>::default();
-        computed_mass_override.global_override(ComponentReplicationOverride {
-            replicate_once: true,
-            ..default()
-        });
-    }
-}
-
 // Renamed from init, removed start_server
 fn setup(mut commands: Commands) {
     commands.spawn((
@@ -218,67 +150,6 @@ fn setup(mut commands: Commands) {
     ));
 }
 
-/// Add the ReplicationSender component to new clients
-pub(crate) fn handle_new_client(trigger: On<Add, LinkOf>, mut commands: Commands) {
-    commands
-        .entity(trigger.entity)
-        .insert(ReplicationSender::new(
-            SEND_INTERVAL,
-            SendUpdatesMode::SinceLastAck,
-            false,
-        ));
-}
-
-/// Spawn the player entity when a client connects
-pub(crate) fn handle_connected(
-    trigger: On<Add, Connected>,
-    query: Query<&RemoteId, With<ClientOf>>,
-    mut commands: Commands,
-    character_query: Query<Entity>,
-) {
-    let Ok(client_id) = query.get(trigger.entity) else {
-        return;
-    };
-    let client_id = client_id.0;
-    info!("Client connected with client-id {client_id:?}. Spawning character entity.");
-
-    // Track the number of characters to pick colors and starting positions.
-    let num_characters = character_query.iter().count();
-
-    // Pick color and position for player.
-    let available_colors = [
-        css::LIMEGREEN,
-        css::PINK,
-        css::YELLOW,
-        css::AQUA,
-        css::CRIMSON,
-        css::GOLD,
-        css::ORANGE_RED,
-        css::SILVER,
-        css::SALMON,
-        css::YELLOW_GREEN,
-        css::WHITE,
-        css::RED,
-    ];
-    let color = available_colors[num_characters % available_colors.len()];
-    let angle: f32 = num_characters as f32 * 5.0;
-    let x = 2.0 * angle.cos();
-    let z = 2.0 * angle.sin();
-
-    // Spawn the character with ActionState. The client will add their own InputMap.
-    let character = commands
-        .spawn((
-            Name::new("Character"),
-            Position(Vec3::new(x, 3.0, z)),
-            Replicate::to_clients(NetworkTarget::All),
-            PredictionTarget::to_clients(NetworkTarget::All),
-            ControlledBy {
-                owner: trigger.entity,
-                lifetime: Default::default(),
-            },
-            CharacterPhysicsBundle::default(),
-        ))
-        .id();
-
-    info!("Created entity {character:?} for client {client_id:?}");
+fn handle_new_client(trigger: On<Add, LinkOf>) {
+    info!("Client connected: {:?}", trigger.event_target());
 }

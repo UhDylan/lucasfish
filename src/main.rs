@@ -28,6 +28,8 @@ fn main() {
 
     cli.spawn_connections(&mut app);
 
+    app.add_plugins(bevy::log::LogPlugin::default());
+
     match cli.mode {
         #[cfg(feature = "client")]
         Some(Mode::Client { .. }) => {
