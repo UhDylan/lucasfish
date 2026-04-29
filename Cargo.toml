@@ -7,13 +7,17 @@ edition = "2024"
 opt-level = 3
 
 [features] 
-default = ["client"]
+default = []
 client = []
 steam = []
 server = []
 debug = []
 ui2d = []
 ui3d = []
+
+[alias]
+server = "run --features server -- server"
+client = "run --features client -- client"
 
 [dependencies]
 bevy = { version = "0.18.1"}

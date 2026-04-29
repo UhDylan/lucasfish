@@ -20,7 +20,7 @@ pub const STEAM_APP_ID: u32 = 300923;
 
 pub const CLIENT_PORT: u16 = 0;
 
-pub const SERVER_ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(34, 60, 165, 78), SERVER_PORT));
+pub const SERVER_ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(34, 171, 251, 236), SERVER_PORT));
 
 pub const SEND_INTERVAL: Duration = Duration::from_millis(100);
 
