@@ -1,0 +1,7 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.43s
+     Running `target/debug/lucas_fishing server`
+error: unrecognized subcommand 'server'
+
+Usage: lucas_fishing [COMMAND]
+
+For more information, try '--help'.
